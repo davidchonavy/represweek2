@@ -1,0 +1,68 @@
+---
+title: "Reproducible Research Week 2 Assignment"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Importing and Reading Data
+
+This is an R Markdown document for the Coursera module Reproducible Research, self-graded assignment for week 2, which specifies the source data for analysis, repdata_data_activity.zip.  
+
+Using the 'readr' package to read the source data into a large data frame of 17568 obs. of 3 variables.
+
+```{r }
+library(readr)
+repdata_data_activity <-read_csv("repdata_data_activity.zip")
+head(repdata_data_activity,5)
+```
+
+## 2. Histogram Total Number of Steps Taken Each Day
+
+```{r}
+dailysums<-aggregate(x=repdata_data_activity$steps,by=list(Day=repdata_data_activity$date), simplify=TRUE, FUN=sum)
+Steps <- dailysums$x
+hist(Steps, breaks=15)
+```
+
+## 3. Mean and Median Number of Steps Taken Each Day
+1st value is mean, 2nd value is median.  Median is zero across due to the many intervals that have zero steps.
+
+```{r}
+mean_median<-tapply(repdata_data_activity$steps,repdata_data_activity$date,function(steps){c(mean(steps),median(steps))})
+mean_median_df<-data.frame(matrix(unlist(mean_median),nrow=length(mean_median),byrow=T))
+row.names(mean_median_df) <- names(mean_median)
+colnames(mean_median_df) <-c("mean","median")
+mean_median_df
+```
+
+## 4a. Time Series Plot of the Average Number of Steps Taken Daily
+```{r}
+library(ggplot2)
+mean_median_df_nona <- mean_median_df[!is.na(mean_median_df$mean),]
+ggplot(data=mean_median_df_nona, aes(x=row.names(mean_median_df_nona),y=mean,group=1)) + geom_line(color="gray",size=1) + geom_point() + scale_x_discrete(breaks=c('2012-10-02','2012-10-29','2012-11-29'), labels=c('2012-10-02'='10/2','2012-10-29'='10/29','2012-11-29'='11/29')) + labs(title="Number of Steps, Daily Average October - November 2012", x="dates", y="average") + theme(plot.title = element_text(hjust=.5))
+```
+
+## 4b. Time Series Plot of the Average Number of Steps Taken At Each Interval
+```{r}
+mean_interval<-tapply(repdata_data_activity$steps,repdata_data_activity$interval,function(steps){mean(steps,na.rm=TRUE)})
+mean_interval_df<-data.frame(matrix(unlist(mean_interval),nrow=length(mean_interval),byrow=T))
+row.names(mean_interval_df) <- names(mean_interval)
+colnames(mean_interval_df) <-"mean"
+```
+Here's the few top rows:
+```{r}
+head(mean_interval_df)
+```
+Now the time series chart of the average number of steps in each interval across the time period Oct-Nov 2012
+```{r}
+ggplot(data=mean_interval_df,aes(x=c(1:288),y=mean,group=1))+ geom_line(color="gray",size=1) + geom_point() + scale_x_discrete(breaks=NULL)+labs(title="Number of Steps, Interval Average October - November 2012",x="interval", y="average") + theme(plot.title=element_text(hjust=.5))
+```
+
+## The 5-minute interval that contains the maximum number of steps, on average across all the days in the dataset is:
+```{r}
+interval_names<-row.names(mean_interval_df)
+interval_names[which(mean_interval_df$mean==max(mean_interval_df$mean))]
+```
